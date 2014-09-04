@@ -9,7 +9,7 @@ from sys import exit
 from os import remove
 from tempfile import NamedTemporaryFile as namedtemporaryfile
 
-GREETING = ("""'xml-kinfig' v1.1 - bulk file update utility
+GREETING = ("""'autoxml-kinfig' v1.1 - bulk file update utility
 Conception, design and programming by Mark Kinney
 Use at your own peril, no warranty or support provided 
 Ctrl-C to exit at any time\n""")
@@ -19,19 +19,18 @@ END = ("\nPress ENTER to exit") #testing only
 def snapshothandler():
     start = time() 
     dir_list = [] 
-    dir_list += glob(rootdir + '/*/*/???????????????/???????/???.??????') 
-    dir_list += glob(rootdir + '/*/*/???????????????/???.??????')  
+    #dir_list += glob(rootdir + '/*/*/???????????????/???????/???.??????')
+    #dir_list += glob(rootdir + '/*/*/???????????????/???.??????')  
+    dir_list += glob(rootdir + '/*/???????????????/???????/???.??????') 
+    dir_list += glob(rootdir + '/*/???????????????/???.??????')  
     errors = []
     for d in dir_list: 
         try:
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
-                    #for line in input:
-                    #    if 'aspnet_isapi.dll" resourceType="Unspecified"' in line:
-                    #        del(line) #troublesomeline here
-                    for text in input:
-                        if 'aspnet_isapi.dll" resourceType="Unspecified"' in text:
-                            text.strip() #not deleting
+                    for line in input:
+                        if 'aspnet_isapi.dll" resourceType="Unspecified"' in line:
+                            break #this should go the next file in dir_list
                         output.write(re.sub ('</handlers>', '  <add name="SnapshotHandler2" path="*.snapshot" verb="*" modules="IsapiModule" scriptProcessor="C:\Windows\Microsoft.NET\Framework64\\\\v2.0.50727\\\\aspnet_isapi.dll" resourceType="Unspecified" preCondition="classicMode,runtimeVersionv2.0,bitness64" />\n    </handlers>', text,
                         flags=re.IGNORECASE | re.MULTILINE))
             move(output.name, input.name)
@@ -79,17 +78,24 @@ def update(rootdir, old_string, new_string):
 
 
 
-
+# Need to build a list with all servers in one
 print (GREETING)
-server = "h1-chdevws13/www/mark"
-rootdir = r'//' + server 
+server = "home/yenic"
+rootdir = r'/' + server 
+#server = "h1-chdevws13/www/mark"
+#rootdir = r'//' + server 
 
-# Delete snapshothandler if it exists, and create one whether it existed before or not
-snapshothandler()
+# Adds snapshot handler if not in the file already
+#snapshothandler()
 
 # Old dev wordservice to new
 old_string = 'http://chqapt2:9102/wordservice.asmx' 
-new_string = 'http://h1-bds-wordservice-services.int.thomsonreuters.com:8040/wordservice.asmx'
+new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
+update (rootdir, old_string, new_string)
+
+# Prod wordservice to new
+old_string = 'http://ecomhawordservice.h1ecom.com:8040/wordservice.asmx' 
+new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
 update (rootdir, old_string, new_string)
 
 # Old dev SMTP server to new
