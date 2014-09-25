@@ -8,59 +8,36 @@ from shutil import move
 from sys import exit
 from os import remove
 from tempfile import NamedTemporaryFile as namedtemporaryfile
+import lxml.etree
 
 GREETING = ("""'autoxml-kinfig' v1.1 - bulk file update utility
-Conception, design and programming by Mark Kinney
+Conception, design and programming by yenic
 Use at your own peril, no warranty or support provided 
 Ctrl-C to exit at any time\n""")
 
 END = ("\nPress ENTER to exit") #testing only
 
-def snapshothandler():
+def update(rootdir, node, value, setting):
     start = time() 
     dir_list = [] 
-    #dir_list += glob(rootdir + '/*/*/???????????????/???????/???.??????')
-    #dir_list += glob(rootdir + '/*/*/???????????????/???.??????')  
-    dir_list += glob(rootdir + '/*/???????????????/???????/???.??????') 
-    dir_list += glob(rootdir + '/*/???????????????/???.??????')  
+    for dir in rootdir:
+        dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????'))
+        dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????'))
+    #dir_list += [glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????') for dir in rootdir]
+    #dir_list += [glob(''.join(rootdir) + '/*/*/???????????????/???.??????') for dir in rootdir]
     errors = []
+    print (dir_list)
     for d in dir_list: 
+        output = None
         try:
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
-                    for line in input:
-                        if 'aspnet_isapi.dll" resourceType="Unspecified"' in line:
-                            break #this should go the next file in dir_list
-                        output.write(re.sub ('</handlers>', '  <add name="SnapshotHandler2" path="*.snapshot" verb="*" modules="IsapiModule" scriptProcessor="C:\Windows\Microsoft.NET\Framework64\\\\v2.0.50727\\\\aspnet_isapi.dll" resourceType="Unspecified" preCondition="classicMode,runtimeVersionv2.0,bitness64" />\n    </handlers>', text,
-                        flags=re.IGNORECASE | re.MULTILINE))
-            move(output.name, input.name)
-        except EnvironmentError as e:
-            errors.append(e.filename)
-        try:
-            remove(output.name)
-        except EnvironmentError:
-            pass
-    end = time()
-    if len(errors) > 0:
-        print ("\nPermission errors for the following (check for read-only)"
-            "\n", "\n".join(errors), sep="", end="\n")
-    print ("\nAll done-\n",len(dir_list)," files found\n",
-    "{0:.2f}".format(end - start)," seconds elapsed", sep="")
-    raw_input(END) #testing only
-
-def update(rootdir, old_string, new_string):
-    start = time() 
-    dir_list = [] 
-    dir_list += glob(rootdir + '/*/*/???????????????/???????/???.??????') 
-    dir_list += glob(rootdir + '/*/*/???????????????/???.??????')  
-    errors = []
-    for d in dir_list: 
-        try:
-            with open (d) as input:
-                with namedtemporaryfile('w+', delete=False) as output:
-                    for text in input:
-                        output.write(re.sub (old_string, new_string, text,
-                        flags=re.IGNORECASE | re.MULTILINE))
+                    doc = lxml.etree.parse(input)
+                    result = doc.xpath('.//' + node)
+                    assert len(result) == 1
+                    result[0].set(value, setting)
+                    with open(input, 'w') as f:
+                        f.write(lxml.etree.tostring(doc))
             move(output.name, input.name)
         except EnvironmentError as e:
             errors.append(e.filename)
@@ -78,21 +55,48 @@ def update(rootdir, old_string, new_string):
 
 
 
-# Need to build a list with all servers in one
-print (GREETING)
-server = "home/yenic"
-rootdir = r'/' + server 
-#server = "h1-chdevws13/www/mark"
-#rootdir = r'//' + server 
+# insert event handlers if not in the file already, commented out till rest is working
+"""
+handlers = doc.xpath('.//system.webServer/handlers')
+assert len(handlers) == 1
+handlers = handlers[0]
+if not handlers.xpath('add[@name="SnapshotHandler2"]'):
+    handlers.append(E.add(name='<add name="SnapshotHandler2" path="*.snapshot" verb="*" modules="IsapiModule" scriptProcessor="C:\Windows\Microsoft.NET\Framework64\\\\v2.0.50727\\\\aspnet_isapi.dll" resourceType="Unspecified" preCondition="classicMode,runtimeVersionv3.0,bitness64" />'))
+"""
 
-# Adds snapshot handler if not in the file already
-#snapshothandler()
+
+print (GREETING)
+'''rootdir = ['//h1-chdevws13/www', '//h1-chdevws12/www', '//h1-chdevws12/www2',
+        '//h1chdevws11/www', '//h1-chdevws13/qa', '//h1-chqaws12/www',
+        '//h1-chqaws11/www']
+'''
+ # production
+rootdir = ['/home/yenic'] #test
+
+# Prod Webfarm to dev
+node = 'WebFarmInfo'
+value = 'loadBalanced'
+setting = 'false'
+update (rootdir, node, value, setting)
+
+#Old dev wordservice to new
+node = 'ApplicationInfo'
+value = 'WordWebService'
+setting = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
+update (rootdir, node, value, setting)
+
+'''
+old_string = '<WebFarmInfo loadBalanced="true">' 
+new_string = '<WebFarmInfo loadBalanced="false">'
+update (rootdir, old_string, new_string)
 
 # Old dev wordservice to new
 old_string = 'http://chqapt2:9102/wordservice.asmx' 
 new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
 update (rootdir, old_string, new_string)
+'''
 
+'''
 # Prod wordservice to new
 old_string = 'http://ecomhawordservice.h1ecom.com:8040/wordservice.asmx' 
 new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
@@ -172,8 +176,4 @@ update (rootdir, old_string, new_string)
 old_string = 'LDAP://EG-H1DC-A01.H1ECOM.COM' 
 new_string = 'LDAP://chopsut1.hubbardone.net'
 update (rootdir, old_string, new_string)
-
-# Prod Webfarm to dev
-old_string = '<WebFarmInfo loadBalanced="true">' 
-new_string = '<WebFarmInfo loadBalanced="false">'
-update (rootdir, old_string, new_string)
+'''
