@@ -9,35 +9,40 @@ from sys import exit
 from os import remove
 from tempfile import NamedTemporaryFile as namedtemporaryfile
 import lxml.etree
+import os
 
-GREETING = ("""'autoxml-kinfig' v1.1 - bulk file update utility
+GREETING = ("""\n\n'autoxml-kinfig' v1.1 - bulk file update utility
 Conception, design and programming by yenic
 Use at your own peril, no warranty or support provided 
 Ctrl-C to exit at any time\n""")
 
 END = ("\nPress ENTER to exit") #testing only
 
-def update(rootdir, node, value, setting):
+def update(rootdir, element, attribute, attribute_setting):
     start = time() 
     dir_list = [] 
-    for dir in rootdir:
-        dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????'))
-        dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????'))
-    #dir_list += [glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????') for dir in rootdir]
-    #dir_list += [glob(''.join(rootdir) + '/*/*/???????????????/???.??????') for dir in rootdir]
+    [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????')) for dir in rootdir]
+    [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????')) for dir in rootdir]
     errors = []
-    print (dir_list)
+    #print (dir_list)
     for d in dir_list: 
-        output = None
+        #output = None
+        #print (d, os.path.getsize(d))
         try:
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
                     doc = lxml.etree.parse(input)
-                    result = doc.xpath('.//' + node)
-                    assert len(result) == 1
-                    result[0].set(value, setting)
-                    with open(input, 'w') as f:
-                        f.write(lxml.etree.tostring(doc))
+                    for item in doc.xpath('//*[{0}]'.format(element)):
+                        item.attrib['{0}'.format(attribute)] = {0}.format(attribute_setting)
+                    output.write(lxml.etree.tostring(doc))
+                    #print (doc)
+                    #print(lxml.etree.tostring(doc))
+                    #result = doc.xpath('.//' + element)
+                    #assert len(node) == 1
+                    #print (result)
+                    #result[0].set(value, setting)
+                    #with open(input, 'w') as f:
+                        #f.write(lxml.etree.tostring(doc))
             move(output.name, input.name)
         except EnvironmentError as e:
             errors.append(e.filename)
@@ -70,21 +75,22 @@ print (GREETING)
         '//h1chdevws11/www', '//h1-chdevws13/qa', '//h1-chqaws12/www',
         '//h1-chqaws11/www']
 '''
- # production
+
+# production
 rootdir = ['/home/yenic'] #test
 
 # Prod Webfarm to dev
-node = 'WebFarmInfo'
-value = 'loadBalanced'
-setting = 'false'
-update (rootdir, node, value, setting)
-
+element = 'WebFarmInfo'
+attribute = 'loadBalanced'
+attribute_setting = 'falsetto'
+update (rootdir, element, attribute, attribute_setting)
+'''
 #Old dev wordservice to new
 node = 'ApplicationInfo'
 value = 'WordWebService'
 setting = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
 update (rootdir, node, value, setting)
-
+'''
 '''
 old_string = '<WebFarmInfo loadBalanced="true">' 
 new_string = '<WebFarmInfo loadBalanced="false">'
