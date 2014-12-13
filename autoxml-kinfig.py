@@ -12,7 +12,7 @@ import lxml.etree
 import os
 
 GREETING = ("""\n\n'autoxml-kinfig' v1.1 - bulk file update utility
-Conception, design and programming by yenic
+Conception, design and programming by Mark Kinney
 Use at your own peril, no warranty or support provided 
 Ctrl-C to exit at any time\n""")
 
@@ -24,6 +24,7 @@ def update(rootdir, element, attribute, attribute_setting):
     [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????')) for dir in rootdir]
     [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????')) for dir in rootdir]
     errors = []
+    xpath_namespaces = {None : 'http://schemas.microsoft.com/.NetConfiguration/v2.0'}
     #print (dir_list)
     for d in dir_list: 
         #output = None
@@ -32,7 +33,7 @@ def update(rootdir, element, attribute, attribute_setting):
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
                     doc = lxml.etree.parse(input)
-                    for item in doc.xpath('//*[{0}]'.format(element)):
+                    for item in doc.xpath('//*[{0}]'.format(element), namespaces= xpath_namespaces):
                         item.attrib['{0}'.format(attribute)] = {0}.format(attribute_setting)
                     output.write(lxml.etree.tostring(doc))
                     #print (doc)
