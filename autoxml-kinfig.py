@@ -24,7 +24,8 @@ def update(rootdir, element, attribute, attribute_setting):
     [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????')) for dir in rootdir]
     [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????')) for dir in rootdir]
     errors = []
-    xpath_namespaces = {None : 'http://schemas.microsoft.com/.NetConfiguration/v2.0'}
+    xpath_namespaces = dict(re='http://schemas.microsoft.com/.NetConfiguration/v2.0')
+    #xpath_namespaces = {None : 'http://schemas.microsoft.com/.NetConfiguration/v2.0'}
     #print (dir_list)
     for d in dir_list: 
         #output = None
@@ -33,8 +34,15 @@ def update(rootdir, element, attribute, attribute_setting):
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
                     doc = lxml.etree.parse(input)
+                    #for item in doc.xpath('//*[{0}]'.format(element), namespaces= xpath_namespaces):
+                        #item.attrib['{1}'.format(attribute)] = {2}.format(attribute_setting)
+                    for item in doc.xpath('//re:{0}'.format(element), namespaces= xpath_namespaces):
+                        item.attrib[attribute] = attribute_setting
+                    output.write(lxml.etree.tostring(doc))
+                    """
+                    doc = lxml.etree.parse(input)
                     for item in doc.xpath('//*[{0}]'.format(element), namespaces= xpath_namespaces):
-                        item.attrib['{0}'.format(attribute)] = {0}.format(attribute_setting)
+                        item.attrib['{1}'.format(attribute)] = {2}.format(attribute_setting)
                     output.write(lxml.etree.tostring(doc))
                     #print (doc)
                     #print(lxml.etree.tostring(doc))
@@ -42,8 +50,9 @@ def update(rootdir, element, attribute, attribute_setting):
                     #assert len(node) == 1
                     #print (result)
                     #result[0].set(value, setting)
-                    #with open(input, 'w') as f:
+                    #with open(output, 'w') as f:
                         #f.write(lxml.etree.tostring(doc))
+                    """
             move(output.name, input.name)
         except EnvironmentError as e:
             errors.append(e.filename)
@@ -61,7 +70,7 @@ def update(rootdir, element, attribute, attribute_setting):
 
 
 
-# insert event handlers if not in the file already, commented out till rest is working
+# insert event handlers if not in the file already
 """
 handlers = doc.xpath('.//system.webServer/handlers')
 assert len(handlers) == 1
@@ -83,7 +92,7 @@ rootdir = ['/home/yenic'] #test
 # Prod Webfarm to dev
 element = 'WebFarmInfo'
 attribute = 'loadBalanced'
-attribute_setting = 'falsetto'
+attribute_setting = 'trusss!!!'
 update (rootdir, element, attribute, attribute_setting)
 '''
 #Old dev wordservice to new
