@@ -47,8 +47,6 @@ print ('\n',GREETING, 'Ctrl-C to exit at any time\n',sep="")
 
 start = time() 
 
-#rootdir = ['/home/yenic'] #test
-
 rootdir = ['//h1-chdevws13/www', '//h1-chdevws12/www', '//h1-chdevws12/www2',
         '//h1chdevws11/www', '//h1-chdevws13/qa', '//h1-chqaws12/www',
         '//h1-chqaws11/www']
