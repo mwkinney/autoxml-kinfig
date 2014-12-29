@@ -1,1 +1,1 @@
-Automated bulk file updater for XML attributes
+'autoxml-kinfig' - bulk XML file update utility

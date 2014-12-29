@@ -1,58 +1,37 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
-import re
 from time import time
 from glob import glob
 from shutil import move
-from sys import exit
 from os import remove
 from tempfile import NamedTemporaryFile as namedtemporaryfile
 import lxml.etree
-import os
 
-GREETING = ("""\n\n'autoxml-kinfig' v1.1 - bulk file update utility
+GREETING = ("""'autoxml-kinfig' v1.0 - bulk XML file update utility
 Conception, design and programming by Mark Kinney
-Use at your own peril, no warranty or support provided 
-Ctrl-C to exit at any time\n""")
+Use at your own peril, no warranty or support provided\n""")
 
-END = ("\nPress ENTER to exit") #testing only
-
-def update(rootdir, element, attribute, attribute_setting):
-    start = time() 
-    dir_list = [] 
-    [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????')) for dir in rootdir]
-    [dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????')) for dir in rootdir]
+def update(func_name, dir_list, element, attribute, attribute_setting):
+    try:
+        remove('ReadOnly_XML_files.txt')
+    except EnvironmentError:
+        pass
     errors = []
     xpath_namespaces = dict(re='http://schemas.microsoft.com/.NetConfiguration/v2.0')
-    #xpath_namespaces = {None : 'http://schemas.microsoft.com/.NetConfiguration/v2.0'}
-    #print (dir_list)
     for d in dir_list: 
-        #output = None
-        #print (d, os.path.getsize(d))
         try:
             with open (d) as input:
                 with namedtemporaryfile('w+', delete=False) as output:
                     doc = lxml.etree.parse(input)
-                    #for item in doc.xpath('//*[{0}]'.format(element), namespaces= xpath_namespaces):
-                        #item.attrib['{1}'.format(attribute)] = {2}.format(attribute_setting)
-                    for item in doc.xpath('//re:{0}'.format(element), namespaces= xpath_namespaces):
-                        item.attrib[attribute] = attribute_setting
+                    for item in doc.xpath('//re:{0}'.format(element), namespaces = xpath_namespaces):
+                        if attribute not in item.attrib:
+                            with open('Malformed_XML_files.txt', 'a+') as f1:
+                                print (func_name,'\n',d,'\n',sep="", file=f1)
+                            continue
+                        else:
+                            item.attrib[attribute] = attribute_setting
                     output.write(lxml.etree.tostring(doc))
-                    """
-                    doc = lxml.etree.parse(input)
-                    for item in doc.xpath('//*[{0}]'.format(element), namespaces= xpath_namespaces):
-                        item.attrib['{1}'.format(attribute)] = {2}.format(attribute_setting)
-                    output.write(lxml.etree.tostring(doc))
-                    #print (doc)
-                    #print(lxml.etree.tostring(doc))
-                    #result = doc.xpath('.//' + element)
-                    #assert len(node) == 1
-                    #print (result)
-                    #result[0].set(value, setting)
-                    #with open(output, 'w') as f:
-                        #f.write(lxml.etree.tostring(doc))
-                    """
             move(output.name, input.name)
         except EnvironmentError as e:
             errors.append(e.filename)
@@ -60,136 +39,113 @@ def update(rootdir, element, attribute, attribute_setting):
             remove(output.name)
         except EnvironmentError:
             pass
-    end = time()
     if len(errors) > 0:
-        print ("\nPermission errors for the following (check for read-only)"
-            "\n", "\n".join(errors), sep="", end="\n")
-    print ("\nAll done-\n",len(dir_list)," files found\n",
-    "{0:.2f}".format(end - start)," seconds elapsed", sep="")
-    raw_input(END)
+        with open('ReadOnly_XML_files.txt', 'a+') as f2:
+            print (errors,'\n', sep="", file=f2)
 
+print ('\n',GREETING, 'Ctrl-C to exit at any time\n',sep="")
 
+start = time() 
 
-# insert event handlers if not in the file already
-"""
-handlers = doc.xpath('.//system.webServer/handlers')
-assert len(handlers) == 1
-handlers = handlers[0]
-if not handlers.xpath('add[@name="SnapshotHandler2"]'):
-    handlers.append(E.add(name='<add name="SnapshotHandler2" path="*.snapshot" verb="*" modules="IsapiModule" scriptProcessor="C:\Windows\Microsoft.NET\Framework64\\\\v2.0.50727\\\\aspnet_isapi.dll" resourceType="Unspecified" preCondition="classicMode,runtimeVersionv3.0,bitness64" />'))
-"""
+#rootdir = ['/home/yenic'] #test
 
-
-print (GREETING)
-'''rootdir = ['//h1-chdevws13/www', '//h1-chdevws12/www', '//h1-chdevws12/www2',
+rootdir = ['//h1-chdevws13/www', '//h1-chdevws12/www', '//h1-chdevws12/www2',
         '//h1chdevws11/www', '//h1-chdevws13/qa', '//h1-chqaws12/www',
         '//h1-chqaws11/www']
-'''
 
-# production
-rootdir = ['/home/yenic'] #test
+try:
+    remove('Malformed_XML_files.txt')
+    remove('FilesFound_TimeToComplete.txt')
+except EnvironmentError:
+    pass
 
-# Prod Webfarm to dev
+dir_list = [] 
+[dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???????/???.??????')) for dir in rootdir]
+[dir_list.extend(glob(''.join(rootdir) + '/*/*/???????????????/???.??????')) for dir in rootdir]
+
+func_name = 'Webfarm'
 element = 'WebFarmInfo'
 attribute = 'loadBalanced'
-attribute_setting = 'trusss!!!'
-update (rootdir, element, attribute, attribute_setting)
-'''
-#Old dev wordservice to new
-node = 'ApplicationInfo'
-value = 'WordWebService'
-setting = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
-update (rootdir, node, value, setting)
-'''
-'''
-old_string = '<WebFarmInfo loadBalanced="true">' 
-new_string = '<WebFarmInfo loadBalanced="false">'
-update (rootdir, old_string, new_string)
+attribute_setting = 'false'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Old dev wordservice to new
-old_string = 'http://chqapt2:9102/wordservice.asmx' 
-new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
-update (rootdir, old_string, new_string)
-'''
+func_name = 'WordService'
+element = 'ApplicationInfo'
+attribute = 'WordWebService'
+attribute_setting = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-'''
-# Prod wordservice to new
-old_string = 'http://ecomhawordservice.h1ecom.com:8040/wordservice.asmx' 
-new_string = 'http://h1-bds-wordservice-dev.int.thomsonreuters.com:8040/wordservice.asmx'
-update (rootdir, old_string, new_string)
+func_name = 'Application SMTP'
+element = 'ApplicationInfo'
+attribute = 'SMTPServer'
+attribute_setting = 'h1-chdevws13.tlr.thomson.com'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Old dev SMTP server to new
-old_string = 'internal.hubbardone.net' 
-new_string = 'h1-chdevws13.tlr.thomson.com'
-update (rootdir, old_string, new_string)
+func_name = 'ExceptionManager SMTP - ignore this unless the same file is listed twice (2 publisher elements, 1 has SMTPServer)'
+element = 'publisher'
+attribute = 'SMTPServer'
+attribute_setting = 'h1-chdevws13.tlr.thomson.com'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod smtpserver setting to new
-old_string = 'smtpserver="localhost"' 
-new_string = 'SMTPServer="h1-chdevws13.tlr.thomson.com"'
-update (rootdir, old_string, new_string)
+func_name = 'Environment'
+element = 'ApplicationInfo'
+attribute = 'Environment'
+attribute_setting = 'dev'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# ONI smtpserver to our new 
-old_string = 'internal.onenorthhost.com' 
-new_string = 'h1-chdevws13.tlr.thomson.com'
-update (rootdir, old_string, new_string)
+func_name = 'License server'
+element = 'ApplicationInfo'
+attribute = 'LicenseServer'
+attribute_setting = 'http://eg-ebdbuild-02.int.thomsonreuters.com/LicenseServer/WebService/LicenseServer.asmx'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Internal hostname to FQDN 
-old_string = 'h1-chdevws13' 
-new_string = 'h1-chdevws13.tlr.thomson.com'
-update (rootdir, old_string, new_string)
+func_name = 'Proxy'
+element = 'ApplicationInfo'
+attribute = 'ProxyAddress'
+attribute_setting = 'webproxy.int.westgroup.com'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod environment to dev
-old_string = 'Environment="prod"' 
-new_string = 'Environment="dev"'
-update (rootdir, old_string, new_string)
+func_name = 'HTTP protocol'
+element = 'ApplicationInfo'
+attribute = 'Protocol'
+attribute_setting = 'http'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod license server to dev
-old_string = 'http://license60.firmconnect.com/WebService/LicenseServer.asmx' 
-new_string = 'http://eg-ebdbuild-02.int.thomsonreuters.com/LicenseServer/WebService/LicenseServer.asmx'
-update (rootdir, old_string, new_string)
+func_name = 'MatterDataService'
+element = 'ApplicationInfo'
+attribute = 'MatterDataWebService'
+attribute_setting = 'http://chqapt2.tlr.thomson.com:9098/MatterDataService.asmx?op=GetMatterDataByMatterNumber'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Old dev license server to new
-old_string = 'http://h1-chbuildpt3/LicenseServer/WebService/LicenseServer.asmx' 
-new_string = 'http://eg-ebdbuild-02.int.thomsonreuters.com/LicenseServer/WebService/LicenseServer.asmx'
-update (rootdir, old_string, new_string)
+func_name = 'SMTP NetworkDelivery'
+element = 'ApplicationInfo'
+attribute = 'SMTPUseNetworkDelivery'
+attribute_setting = 'true'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod proxy to dev
-old_string = 'webproxy.westlan.com' 
-new_string = 'webproxy.int.westgroup.com'
-update (rootdir, old_string, new_string)
+func_name = 'Directory key'
+element = 'Directory'
+attribute = 'key'
+attribute_setting = 'TLR'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod https setting to dev
-old_string = 'Protocol="https"' 
-new_string = 'Protocol="http"'
-update (rootdir, old_string, new_string)
+func_name = 'Directory name'
+element = 'Directory'
+attribute = 'directoryName'
+attribute_setting = 'TLR'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# Prod MatterDataService to dev
-old_string = 'http://localhost/MatterDataService/MatterDataService.asmx?op=GetMatterDataByMatterNumber' 
-new_string = 'http://chqapt2.tlr.thomson.com:9098/MatterDataService.asmx?op=GetMatterDataByMatterNumber'
-update (rootdir, old_string, new_string)
+func_name = 'LDAP'
+element = 'parameter'
+attribute = 'value'
+attribute_setting = 'LDAP://chopsut1.hubbardone.net'
+update (func_name, dir_list, element, attribute, attribute_setting)
 
-# New site deployment MatterDataService to dev
-old_string = 'MatterDataWebService="http://"' 
-new_string = 'MatterDataWebService="http://chqapt2.tlr.thomson.com:9098/MatterDataService.asmx?op=GetMatterDataByMatterNumber"'
-update (rootdir, old_string, new_string)
+end = time()
 
-# Prod SMTP Network Delivery to dev
-old_string = 'SMTPUseNetworkDelivery="false"' 
-new_string = 'SMTPUseNetworkDelivery="true"'
-update (rootdir, old_string, new_string)
+with open('FilesFound_TimeToComplete.txt', 'a+') as f3:
+    print (GREETING,"\nLast run-\n",len(dir_list)," files found\n",
+    "{0:.2f}".format(end - start)," seconds elapsed", sep="", file=f3)
 
-# Prod directory key name to dev
-old_string = 'Directory key="H1ECOM"' 
-new_string = 'Directory key="TLR"'
-update (rootdir, old_string, new_string)
-
-# Prod directory key name to dev
-old_string = 'directoryName="H1ECOM"' 
-new_string = 'directoryName="TLR"'
-update (rootdir, old_string, new_string)
-
-# Prod LDAP to dev
-old_string = 'LDAP://EG-H1DC-A01.H1ECOM.COM' 
-new_string = 'LDAP://chopsut1.hubbardone.net'
-update (rootdir, old_string, new_string)
-'''
+print ("All done-\n",len(dir_list)," files found\n",
+"{0:.2f}".format(end - start)," seconds elapsed\n", sep="")
