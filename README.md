@@ -1,1 +1,1 @@
-'autoxml-kinfig' - bulk XML file update utility
+autoxml-kinfig - bulk XML file update utility
