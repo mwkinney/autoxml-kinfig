@@ -28,13 +28,13 @@ def update(func_name, dir_list, element, attribute, attribute_setting):
                         doc = lxml.etree.parse(input)
                     except lxml.etree.XMLSyntaxError as s:
                         print ('\n',d,'\n',s,'\n',sep="")
-                        with open('Malformed_XML_files.txt', 'a+') as f3:
+                        with open('Malformed_XML.txt', 'a+') as f3:
                             print (d,'\n',s,'\n',sep="", file=f3)
                         continue
                     for item in doc.xpath('//re:{0}'.format(element), namespaces = xpath_namespaces):
                         if attribute not in item.attrib:
                             print ('\n',d,'\n',func_name,'\n',sep="")
-                            with open('Malformed_XML_files.txt', 'a+') as f3:
+                            with open('Malformed_XML.txt', 'a+') as f3:
                                 print (d,'\n',func_name,'\n',sep="", file=f3)
                             continue
                         else:
@@ -74,8 +74,8 @@ with open('FileList_TimeToComplete.txt', 'w+') as f1:
 with open('AsProcessed.txt', 'w+') as f2:
     print (GREETING,"\nFiles in order as processed.\n", sep="", file=f2)
 
-with open('Malformed_XML_files.txt', 'w+') as f3:
-    print (GREETING,"\nCorrupted XML elements that will be skipped until fixed.\n", sep="", file=f3)
+with open('Malformed_XML.txt', 'w+') as f3:
+    print (GREETING,"\nCorrupted XML that will be skipped until fixed.\n", sep="", file=f3)
 
 with open('AccessError_files.txt', 'w+') as f4:
     print (GREETING,"\nFiles with access errors, check them for read-only access. They will be skipped until fixed.",'\n', sep="", file=f4)
