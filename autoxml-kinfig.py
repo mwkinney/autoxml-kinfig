@@ -22,20 +22,20 @@ def update(func_name, dir_list, element, attribute, attribute_setting):
                 with namedtemporaryfile('w+', delete=False) as output:
                     print (input.name)
                     input.flush()
-                    with open ('AsProcessed_TimeToComplete.txt', 'a+') as f2:
+                    with open ('AsProcessed.txt', 'a+') as f2:
                             print (input.name, file = f2)
                     try:
                         doc = lxml.etree.parse(input)
                     except lxml.etree.XMLSyntaxError as s:
                         print ('\n',d,'\n',s,'\n',sep="")
                         with open('Malformed_XML_files.txt', 'a+') as f3:
-                            print ('\n',d,'\n',s,'\n',sep="", file=f3)
+                            print (d,'\n',s,'\n',sep="", file=f3)
                         continue
                     for item in doc.xpath('//re:{0}'.format(element), namespaces = xpath_namespaces):
                         if attribute not in item.attrib:
-                            print (func_name,'\n',d,'\n',sep="")
+                            print ('\n',d,'\n',func_name,'\n',sep="")
                             with open('Malformed_XML_files.txt', 'a+') as f3:
-                                print (func_name,'\n',d,'\n',sep="", file=f3)
+                                print (d,'\n',func_name,'\n',sep="", file=f3)
                             continue
                         else:
                             item.attrib[attribute] = attribute_setting
@@ -67,15 +67,15 @@ for d in rootdir:
     dir_list.extend(glob(d + '/*/*/???????????????/???.??????'))
 dir_list.sort(key=str.lower)
 
-with open('FileList.txt', 'w+') as f1:
-    print (GREETING,"\nAll files found.\n", sep="", file=f1)
+with open('FileList_TimeToComplete.txt', 'w+') as f1:
+    print (GREETING,"\nAll files found. See end of file for statistics.\n", sep="", file=f1)
     pprint (dir_list, stream=f1)
 
-with open('AsProcessed_TimeToComplete.txt', 'w+') as f2:
-    print (GREETING,"\nFiles as processed. See the bottom of the file for statistics.\n", sep="", file=f2)
+with open('AsProcessed.txt', 'w+') as f2:
+    print (GREETING,"\nFiles in order as processed.\n", sep="", file=f2)
 
 with open('Malformed_XML_files.txt', 'w+') as f3:
-    print (GREETING,"\nCorrupted XML files that will be skipped until fixed.\n", sep="", file=f3)
+    print (GREETING,"\nCorrupted XML elements that will be skipped until fixed.\n", sep="", file=f3)
 
 with open('AccessError_files.txt', 'w+') as f4:
     print (GREETING,"\nFiles with access errors, check them for read-only access. They will be skipped until fixed.",'\n', sep="", file=f4)
@@ -163,9 +163,9 @@ with open('AccessError_files.txt', 'a+') as f4:
 
 end = time()
 
-with open('AsProcessed_TimeToComplete.txt', 'a+') as f2:
+with open('FileList_TimeToComplete.txt', 'a+') as f1:
     print ("\nLast run-\n",len(dir_list)," files found\n",
-    "{0:.2f}".format(end - start)," seconds elapsed", sep="", file=f2)
+    "{0:.2f}".format(end - start)," seconds elapsed", sep="", file=f1)
 
-print ("All done-\n",len(dir_list)," files found\n",
-"{0:.2f}".format(end - start)," seconds elapsed\n", sep="")
+print ("\nAll done-\n",len(dir_list)," files found\n",
+"{0:.2f}".format(end - start)," seconds elapsed", sep="")
